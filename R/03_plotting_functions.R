@@ -13,11 +13,21 @@ Create_Plots <- function(df_curves, df_trace_treat, df_trace_SoC, v_times, tumou
   # tumour: tumour indication to create plots for
   # t_max: maximum follow-up time in observation period
   
-  ## Save names
-    save_exponential <- paste("figs/curve_fit/observed_", switch_observed, 
-                              "_test_", switch_test, "_tumour_",tumour,".png", sep = "")
-    save_trace       <- paste("figs/trace/observed_", switch_observed, "_test_",
-                              switch_test, "_tumour_",tumour,".png", sep = "")
+  ## Create file directories if they do not yet exist
+    dir_exponential <- file.path("figs", "curve_fit")
+    if (!dir.exists(dir_exponential)) dir.create(dir_exponential, recursive = TRUE)
+    dir_trace <- file.path("figs", "trace")
+    if (!dir.exists(dir_trace)) dir.create(dir_trace, recursive = TRUE)
+  
+  ## File names
+    filename_exponential <- paste("observed_", switch_observed, "_test_", 
+                                  switch_test, "_tumour_",tumour,".png", sep = "")
+    filename_trace <- paste("observed_", switch_observed, "_test_", switch_test,
+                            "_tumour_",tumour,".png", sep = "")
+    
+  ## Save names 
+    save_exponential <- file.path(dir_exponential, filename_exponential)
+    save_trace <- file.path(dir_trace, filename_trace)
   
   
   if (switch_observed == 0){
