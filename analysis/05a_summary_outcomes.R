@@ -92,8 +92,23 @@ for (tumour in v_tumour){
 # save stratified outcomes
 strat_save_name <- paste("outputs/PSA_summary_stratified_observed_", switch_observed,
                          "_test_",switch_test, ".xlsx", sep = "")
-for (tumour in v_tumour){
-  write.xlsx(l_strat_summary[[tumour]], file=strat_save_name, sheetName=tumour, append=TRUE)
+
+if (file.exists(strat_save_name)){
+  print(paste('overwriting original file: ', strat_save_name, sep = ""))
+  # overwrite
+  wb <- loadWorkbook(strat_save_name)
+  for (tumour in v_tumour){
+    temp <- as.data.frame(l_strat_summary[[tumour]])
+    temp[is.na(temp)] <- " "
+    writeData(wb, sheet = tumour, temp, rowNames = TRUE)
+  }
+  saveWorkbook(wb,strat_save_name,overwrite = T)
+} else {
+  for (tumour in v_tumour){
+    xlsx::write.xlsx(l_strat_summary[[tumour]], file=strat_save_name, sheetName=tumour, append=TRUE)
+  }
 }
+
+
 
 
