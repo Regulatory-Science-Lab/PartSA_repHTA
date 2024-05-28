@@ -153,9 +153,9 @@ Calculate_Cost_QALY <- function(df_trace, v_discount_cost, v_discount_qaly, l_c,
   
   ## data frame outputs
   df_results <- data.frame( "Discounted_Cost"  = v_c_discount,
-                         "Discounted_LYs"   = v_ly_discount,
-                         "Discounted_QALYs" = v_q_discount, 
-                         check.names = F)
+                            "Discounted_LYs"   = v_ly_discount,
+                            "Discounted_QALYs" = v_q_discount, 
+                            check.names = F)
   
   return(df_results)
   
@@ -182,8 +182,8 @@ Calculate_Incremental <- function(df_out_treat, df_out_SoC, v_times, t_max){
                                )
   
   # NMB
+  df_incremental$NMB_50000 <- (sum(df_incremental$Inc_QALYs) * 50000) - sum(df_incremental$Inc_Cost)
   df_incremental$NMB_100000 <- (sum(df_incremental$Inc_QALYs) * 100000) - sum(df_incremental$Inc_Cost)
-  df_incremental$NMB_200000 <- (sum(df_incremental$Inc_QALYs) * 200000) - sum(df_incremental$Inc_Cost)
   
   # ICER
   df_incremental$ICER <- sum(df_incremental$Inc_Cost) / sum(df_incremental$Inc_QALYs)
@@ -266,8 +266,8 @@ Weighted_Outcomes <- function(df_sum_SoC, df_sum_treat, df_inc_extrap, df_weight
   } else{
     df_weighted$Proportion_QALYs <- df_weighted$Extrap_Inc_QALYs / df_weighted$Inc_QALY
   }
+  df_weighted$NMB_50000 <- (df_weighted$Inc_QALY * 50000) - df_weighted$Inc_Cost
   df_weighted$NMB_100000 <- (df_weighted$Inc_QALY * 100000) - df_weighted$Inc_Cost
-  df_weighted$NMB_200000 <- (df_weighted$Inc_QALY * 200000) - df_weighted$Inc_Cost
   
   df_weighted$ICER   <- df_weighted$Inc_Cost   / df_weighted$Inc_QALY
 

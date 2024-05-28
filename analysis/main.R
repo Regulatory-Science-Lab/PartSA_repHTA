@@ -3,6 +3,7 @@
 # Author G. Cupples, E.Krebs. 10/10/2023
 
 ## Install/Load Required Packages
+
 if (!require('remotes'))    install.packages('remotes'  , repos = "http://cran.us.r-project.org"); library(remotes)
 if (!require('survival'))   install.packages('survival' , repos = "http://cran.us.r-project.org"); library(survival)
 if (!require('readxl'))     install.packages('readxl'   , repos = "http://cran.us.r-project.org"); library(readxl)
@@ -10,7 +11,9 @@ if (!require('dplyr'))      install.packages('dplyr'    , repos = "http://cran.u
 if (!require('truncnorm'))  install.packages('truncnorm', repos = "http://cran.us.r-project.org"); library(truncnorm)
 if (!require('MCMCpack'))   install.packages('MCMCpack'  , repos = "http://cran.us.r-project.org"); library(MCMCpack)
 if (!require('prevalence')) install.packages('prevalence', repos = "http://cran.us.r-project.org"); library(prevalence)
+if (!require('xlsx'))       install.packages('xlsx'     , repos = "http://cran.us.r-project.org"); library(xlsx)
 if (!require('dampack'))    install_github('DARTH-git/dampack'); library(dampack)
+
 
 ## Load workspace and parameters
 source('data-raw/01_parameter_load.R')
