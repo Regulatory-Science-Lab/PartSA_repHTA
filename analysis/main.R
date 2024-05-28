@@ -4,14 +4,17 @@
 
 ## Install/Load Required Packages
 
-if (!require('remotes'))    install.packages('remotes'  , repos = "http://cran.us.r-project.org"); library(remotes)
-if (!require('survival'))   install.packages('survival' , repos = "http://cran.us.r-project.org"); library(survival)
-if (!require('readxl'))     install.packages('readxl'   , repos = "http://cran.us.r-project.org"); library(readxl)
-if (!require('dplyr'))      install.packages('dplyr'    , repos = "http://cran.us.r-project.org"); library(dplyr)
-if (!require('truncnorm'))  install.packages('truncnorm', repos = "http://cran.us.r-project.org"); library(truncnorm)
+if (!require('remotes'))    install.packages('remotes'   , repos = "http://cran.us.r-project.org"); library(remotes)
+if (!require('survival'))   install.packages('survival'  , repos = "http://cran.us.r-project.org"); library(survival)
+if (!require('readxl'))     install.packages('readxl'    , repos = "http://cran.us.r-project.org"); library(readxl)
+if (!require('dplyr'))      install.packages('dplyr'     , repos = "http://cran.us.r-project.org"); library(dplyr)
+if (!require('truncnorm'))  install.packages('truncnorm' , repos = "http://cran.us.r-project.org"); library(truncnorm)
 if (!require('MCMCpack'))   install.packages('MCMCpack'  , repos = "http://cran.us.r-project.org"); library(MCMCpack)
 if (!require('prevalence')) install.packages('prevalence', repos = "http://cran.us.r-project.org"); library(prevalence)
-if (!require('xlsx'))       install.packages('xlsx'     , repos = "http://cran.us.r-project.org"); library(xlsx)
+if (!require('xlsx'))       install.packages('xlsx'      , repos = "http://cran.us.r-project.org"); library(xlsx)
+if (!require('openxlsx'))   install.packages('openxlsx'  , repos = "http://cran.us.r-project.org"); library(openxlsx)
+if (!require('tidyverse'))  install.packages('tidyverse' , repos = "http://cran.us.r-project.org"); library(tidyverse)
+if (!require('ggplot2'))    install.packages('ggplot2'   , repos = "http://cran.us.r-project.org"); library(ggplot2)
 if (!require('dampack'))    install_github('DARTH-git/dampack'); library(dampack)
 
 
@@ -35,4 +38,5 @@ source('R/04b_PSA_functions.R')
 source('analysis/04b_probabilistic_analysis.R')
 
 ## Manuscript summary outcomes
-source('analysis/05_summary_outcomes.R')
+source('analysis/05a_summary_outcomes.R')
+source('analysis/05b_CEplane.R')
