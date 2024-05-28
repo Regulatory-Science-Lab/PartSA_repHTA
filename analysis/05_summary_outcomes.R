@@ -48,7 +48,7 @@ Prop_CE <- function(ICER, WTP){
 ## Pooled ##
 
 # columns to find summary for
-sum_cols <- c("Inc_Cost","Inc_QALYs","ICER","NMB_100000", "NMB_200000")
+sum_cols <- c("Inc_Cost","Inc_QALYs","ICER","NMB_50000", "NMB_100000")
 # get summary statistics for all included columns
 df_pooled_summary <- sapply(l_outcomes_PSA$weighted_outcomes[,sum_cols], Summary_Outcomes)
 
@@ -57,10 +57,14 @@ prop_dominated <- Prop_Dom(l_outcomes_PSA$weighted_outcomes)
 df_pooled_summary <- cbind(df_pooled_summary, prop_dominated)
 
 # proportion of Cost-effective runs at WTP $100,000 and $200,000
-prop_ce_1 <- Prop_CE(l_outcomes_PSA$weighted_outcomes$ICER, WTP = 100000)
-prop_ce_2 <- Prop_CE(l_outcomes_PSA$weighted_outcomes$ICER, WTP = 200000)
+prop_ce_1 <- Prop_CE(l_outcomes_PSA$weighted_outcomes$ICER, WTP = 50000)
+prop_ce_2 <- Prop_CE(l_outcomes_PSA$weighted_outcomes$ICER, WTP = 100000)
 df_pooled_summary <- cbind(df_pooled_summary, prop_ce_1)
 df_pooled_summary <- cbind(df_pooled_summary, prop_ce_2)
+
+# save summary outcomes
+write.csv(df_pooled_summary, paste("outputs/PSA_summary_pooled_observed_", switch_observed,
+                                   "_test_", switch_test, ".csv", sep = ""))
 
 ## Stratified ##
 
@@ -68,7 +72,7 @@ df_pooled_summary <- cbind(df_pooled_summary, prop_ce_2)
 l_strat_summary <- list()
 for (tumour in v_tumour){
   # columns to find summary for
-  sum_cols <- c("Inc_Cost","Inc_QALYs","ICER","NMB_100000", "NMB_200000")
+  sum_cols <- c("Inc_Cost","Inc_QALYs","ICER","NMB_50000", "NMB_100000")
   # get summary statistics for all included columns
   df_summary <- sapply(l_outcomes_PSA$stratified_outcomes[[tumour]][,sum_cols], Summary_Outcomes)
   
@@ -77,10 +81,19 @@ for (tumour in v_tumour){
   df_summary <- cbind(df_summary, prop_dom_ts)
   
   # proportion of Cost-effective runs at WTP $100,000 and $200,000
-  prop_ce_1 <- Prop_CE(l_outcomes_PSA$stratified_outcomes[[tumour]]$ICER, WTP = 100000)
-  prop_ce_2 <- Prop_CE(l_outcomes_PSA$stratified_outcomes[[tumour]]$ICER, WTP = 200000)
+  prop_ce_1 <- Prop_CE(l_outcomes_PSA$stratified_outcomes[[tumour]]$ICER, WTP = 50000)
+  prop_ce_2 <- Prop_CE(l_outcomes_PSA$stratified_outcomes[[tumour]]$ICER, WTP = 100000)
   df_summary <- cbind(df_summary, prop_ce_1)
   df_summary <- cbind(df_summary, prop_ce_2)
 
   l_strat_summary[[tumour]] <- df_summary
 }
+
+# save stratified outcomes
+strat_save_name <- paste("outputs/PSA_summary_stratified_observed_", switch_observed,
+                         "_test_",switch_test, ".xlsx", sep = "")
+for (tumour in v_tumour){
+  write.xlsx(l_strat_summary[[tumour]], file=strat_save_name, sheetName=tumour, append=TRUE)
+}
+
+
