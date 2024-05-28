@@ -43,10 +43,10 @@ df_weights <- data.frame(tumour   = v_tumour,
                          Trial    = rep(0,length(v_tumour)))
 
 # calculate prevalence for all tumour indications
-df_trial_weight <- l_parameters$`3.7_TrialWeights`
+df_trial_weight <- l_parameters$`3.5_TrialWeights`
 
 # prevalence taken from CADTH reanalysis
-df_clinical_presentation <- l_parameters$`3.8_CADTHWeights`
+df_clinical_presentation <- l_parameters$`3.4_CADTHWeights`
 
 
 df_clinical_presentation$counted <- "N"
