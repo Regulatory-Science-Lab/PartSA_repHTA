@@ -9,7 +9,7 @@ if (!require(dplyr))     install.packages('dplyr'    , repos = "http://cran.us.r
 if (!require(dampack))   install.packages('dampack'  , repos = "http://cran.us.r-project.org"); library(dampack)
 if (!require(truncnorm)) install.packages('truncnorm', repos = "http://cran.us.r-project.org"); library(truncnorm)
 if (!require(MCMCpack))  install.packages('dampack'  , repos = "http://cran.us.r-project.org"); library(MCMCpack)
-
+if (!require(xlsx))      install.packages('xlsx'     , repos = "http://cran.us.r-project.org"); library(xlsx)
 
 ## Load workspace and parameters
 source('data-raw/01_parameter_load.R')
