@@ -140,6 +140,11 @@ if (switch_test == 0){
   df_c_test_treat <- as.data.frame(v_c_test_treat)
   colnames(df_c_test_treat) <- v_tumour
   
+  # set the excluded tumour groups costs to 0
+  if (paste(v_test_exclude, collapse = "|") != "") {
+    df_c_test_treat[,grep(paste(v_test_exclude, collapse = "|"), x = colnames(df_c_test_treat))] <- 0
+  }
+  
   
 }
 
