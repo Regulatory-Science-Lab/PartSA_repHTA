@@ -3,17 +3,14 @@
 # Author G. Cupples, E.Krebs. 10/10/2023
 
 ## Install/Load Required Packages
+install.packages(c('pacman','remotes','survival','readxl','MCMCpack','prevalence',
+'xlsx', 'openxlsx','tidyverse','dampack','truncnorm'))
 
-install.packages('pacman')
 library('pacman')
-
 pacman::p_load('remotes','survival','readxl','MCMCpack','prevalence',
                'xlsx', 'openxlsx','tidyverse','dampack','truncnorm')
 
 
-
-# install.packages(c('remotes','survival','readxl','MCMCpack','prevalence',
-                   # 'xlsx', 'openxlsx','tidyverse','dampack','truncnorm'))
 # library(remotes)
 # library(survival)
 # library(readxl)
