@@ -21,15 +21,28 @@ run_PartSA <- function(df_data_treat, l_curves, l_c_treat, l_c_SoC, l_u_treat,
   # OUTPUTS
   # l_results: a list containing treatment specific and incremental outcomes per tumour
   
-  l_trace_SoC   <- list()
-  l_trace_treat <- list()
+  ## Calculate trace
+  l_trace_SoC   <- lapply(l_curves, function(x) Part_Surv(x$pfs_SoC  , x$os_SoC))
+  l_trace_treat <- lapply(l_curves, function(x) Part_Surv(x$pfs_treat, x$os_treat))
+  
   l_out_SoC     <- list()
   l_out_treat   <- list()
   l_incremental <- list()
   for (tumour in df_data_treat$tumour){
-    ## Calculate trace
-    l_trace_SoC[[tumour]]   <- Part_Surv(l_curves[[tumour]]$pfs_SoC  , l_curves[[tumour]]$os_SoC)
-    l_trace_treat[[tumour]] <- Part_Surv(l_curves[[tumour]]$pfs_treat, l_curves[[tumour]]$os_treat)
+    
+    
+    ## Calculate costs and effects
+    l_out_SoC[[tumour]]   <- Calculate_Cost_QALY(l_trace_SoC[[tumour]], l_c_SoC[[tumour]], 
+                                                 l_u_SoC[[tumour]], v_discount_c, 
+                                                 v_discount_q)
+    
+    l_out_treat[[tumour]] <- Calculate_Cost_QALY(l_trace_treat[[tumour]], l_c_treat[[tumour]], 
+                                                 l_u_treat[[tumour]], v_discount_c, 
+                                                 v_discount_q, switch_vec_cost = 1)
+    
+    ## Calculate incremental
+    l_incremental[[tumour]] <- Calculate_Incremental(l_out_treat[[tumour]], l_out_SoC[[tumour]], 
+                                                     v_times, df_data_treat[df_data_treat$tumour == tumour,]$t_max_pfs)
     
     
     ## Plotting
@@ -37,19 +50,6 @@ run_PartSA <- function(df_data_treat, l_curves, l_c_treat, l_c_SoC, l_u_treat,
       Create_Plots(l_curves[[tumour]], l_trace_treat[[tumour]], l_trace_SoC[[tumour]], v_times, 
                    tumour, t_max = df_data_treat[df_data_treat$tumour == tumour,]$t_max_pfs)
     }
-    
-    
-    ## Calculate costs and effects
-    l_out_SoC[[tumour]]   <- Calculate_Cost_QALY(l_trace_SoC[[tumour]], v_discount_c, 
-                                                 v_discount_q, l_c_SoC[[tumour]], 
-                                                 l_u_SoC[[tumour]])
-    l_out_treat[[tumour]] <- Calculate_Cost_QALY(l_trace_treat[[tumour]], v_discount_c, 
-                                                 v_discount_q, l_c_treat[[tumour]], 
-                                                 l_u_treat[[tumour]], switch_vec_cost = 1)
-    
-    ## Calculate incremental
-    l_incremental[[tumour]] <- Calculate_Incremental(l_out_treat[[tumour]], l_out_SoC[[tumour]], 
-                                                     v_times, df_data_treat[df_data_treat$tumour == tumour,]$t_max_pfs)
   }
   
   
@@ -108,8 +108,8 @@ Part_Surv <- function(v_fit_pfs, v_fit_os){
 }
 
 
-Calculate_Cost_QALY <- function(df_trace, v_discount_cost, v_discount_qaly, l_c, 
-                                l_u, switch_vec_cost = 0) {
+Calculate_Cost_QALY <- function(df_trace, l_c, l_u, v_discount_cost, 
+                                v_discount_qaly, switch_vec_cost = 0) {
   ## Calculate the costs and qalys from being in a specific state
   # INPUTS
   # df_trace: data frame with 3 columns determining state occupancy over time
@@ -136,6 +136,7 @@ Calculate_Cost_QALY <- function(df_trace, v_discount_cost, v_discount_qaly, l_c,
     # sum over rows to get total cost per time point
     v_c  <- rowSums(v_c) 
   }
+  
   # additional testing and AE costs accrued at first time point
   v_c[1] <- v_c[1] + l_c$c_test + l_c$c_AE
   
