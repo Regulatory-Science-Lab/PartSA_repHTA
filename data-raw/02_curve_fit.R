@@ -36,7 +36,7 @@ df_data_SoC$PFS <- df_data_SoC$PFS/12  # scale to years
 ## Construct survival curves
 l_curves    <- list()
 l_model_fit <- list()
-for (tumour in df_data_treat$tumour){
+for (tumour in v_tumour){
   t_max_pfs <- df_data_treat[df_data_treat$tumour == tumour,]$t_max_pfs
   t_max_os  <- df_data_treat[df_data_treat$tumour == tumour,]$t_max_os
   
