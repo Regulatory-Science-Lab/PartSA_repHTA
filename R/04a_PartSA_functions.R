@@ -27,7 +27,6 @@ run_PartSA <- function(df_data_treat, l_curves, l_c_treat, l_c_SoC, l_u_treat,
   
   l_out_SoC     <- list()
   l_out_treat   <- list()
-  l_incremental <- list()
   for (tumour in df_data_treat$tumour){
     
     
@@ -40,17 +39,22 @@ run_PartSA <- function(df_data_treat, l_curves, l_c_treat, l_c_SoC, l_u_treat,
                                                  l_u_treat[[tumour]], v_discount_c, 
                                                  v_discount_q, switch_vec_cost = 1)
     
-    ## Calculate incremental
-    l_incremental[[tumour]] <- Calculate_Incremental(l_out_treat[[tumour]], l_out_SoC[[tumour]], 
-                                                     v_times, df_data_treat[df_data_treat$tumour == tumour,]$t_max_pfs)
-    
-    
     ## Plotting
     if (switch_plot == 1){
       Create_Plots(l_curves[[tumour]], l_trace_treat[[tumour]], l_trace_SoC[[tumour]], v_times, 
                    tumour, t_max = df_data_treat[df_data_treat$tumour == tumour,]$t_max_pfs)
     }
   }
+  
+  ## Calculate incremental
+  # create list of t_max
+  l_t_max <- as.list(df_data_treat[match(v_tumour, df_data_treat$tumour),]$t_max_pfs)
+  names(l_t_max) <- v_tumour
+  
+  l_incremental <- mapply(Calculate_Incremental, l_out_treat, l_out_SoC, l_t_max,
+                          MoreArgs = list(v_times = v_times), SIMPLIFY = FALSE)
+  
+  
   
   
   ## Results
@@ -163,7 +167,7 @@ Calculate_Cost_QALY <- function(df_trace, l_c, l_u, v_discount_cost,
   
 }
 
-Calculate_Incremental <- function(df_out_treat, df_out_SoC, v_times, t_max){
+Calculate_Incremental <- function(df_out_treat, df_out_SoC, t_max, v_times){
   # Calcualte incremental costs and effects, along with the ICER and proportion of
   # QALYs accrued in the extrapolated period
   # INPUTS
