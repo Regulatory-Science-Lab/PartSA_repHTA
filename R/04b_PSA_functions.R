@@ -20,7 +20,7 @@ run_PSA <- function(df_data_treat, df_data_SoC, n_psa, seed,
   ## generate parameter space
   l_parameter_space <- Generate_Parameter_Space(n_psa, seed)
   
-  ## run PartSA for each parameter set
+    ## run PartSA for each parameter set
   l_PSA_stratified <- vector(mode = "list", length = length(v_tumour))
   names(l_PSA_stratified) <- v_tumour
   df_PSA_weighted  <- data.frame()
@@ -80,9 +80,9 @@ Parameter_Setup <- function(df_data_treat, l_parameter_space, ii){
   
   
   ## Costs
+  # comparator
   l_c_SoC <- lapply(l_parameter_space, function(x,i){
     temp <- x[i,]
-    # SoC
     l_c_SoC <- list(
       c_pfs  = temp$c_pfs_SoC,
       c_P    = temp$c_P_SoC,
@@ -92,7 +92,7 @@ Parameter_Setup <- function(df_data_treat, l_parameter_space, ii){
     )
   }, i = ii)
   
-  
+  # intervention
   l_c_treat <- lapply(l_parameter_space, function(x,i,t,ttot,c_p,c_p_P,c_a,c_a_P){
     temp <- x[i,]
     # progression-free
@@ -122,7 +122,6 @@ Parameter_Setup <- function(df_data_treat, l_parameter_space, ii){
   
   
   ## Utilities
-  
   l_u_treat <- lapply(l_parameter_space, function(x,i){
     temp <- x[i,]
     l_u_treat <- list(
@@ -140,48 +139,53 @@ Parameter_Setup <- function(df_data_treat, l_parameter_space, ii){
       u_D   = temp$u_D
     )
   }, i = ii)
-  print(Sys.time()-st)
   
   
-  l_curves_psa    <- list()
+  ## Survival curves
+  l_curves_psa <- sapply(names(l_parameter_space), function(x,i,params,data,t){
+    temp <- params[[x]][i,]
+    
+    SoC_vec   <- data.frame(tumour      = x,
+                            PFS         = temp$PFS_SoC,
+                            OS          = temp$OS_SoC)
+    treat_vec <- data.frame(tumour      = x,
+                            at_risk_pfs = temp$at_risk_pfs,
+                            PFS         = temp$PFS_treat,
+                            t_max_pfs   = data[data$tumour == x,]$t_max_pfs,
+                            at_risk_os  = temp$at_risk_os,
+                            OS          = temp$OS_treat,
+                            t_max_os    = data[data$tumour == x,]$t_max_os)
+    
+    #SoC
+    l_curve_os_SoC  <- Exponential_Curve(SoC_vec$OS , t)
+    l_curve_pfs_SoC <- Exponential_Curve(SoC_vec$PFS, t)
+    
+    # treatment
+    if (switch_observed == 0){
+      # full extrapolation
+      l_curve_os_treat   <- Exponential_Curve(treat_vec$OS , t)
+      l_curve_pfs_treat  <- Exponential_Curve(treat_vec$PFS, t)
+    } else if (switch_observed == 1){
+      # restricted extrapolation - switch to SoC exponential rates after observed period
+      l_curve_os_treat  <- Exponential_Curve_Restricted(treat_vec$OS, treat_vec$at_risk_os,
+                                                        treat_vec$t_max_os, t, l_curve_os_SoC[[1]])
+      l_curve_pfs_treat <- Exponential_Curve_Restricted(treat_vec$PFS, treat_vec$at_risk_pfs,
+                                                        treat_vec$t_max_pfs, t, l_curve_pfs_SoC[[1]])
+    }
+    
+    
+    return(list(os_SoC = l_curve_os_SoC[[2]], pfs_SoC = l_curve_pfs_SoC[[2]],
+                os_treat = l_curve_os_treat[[2]], pfs_treat = l_curve_pfs_treat[[2]]))
+    
+    
+  }, i = ii, params = l_parameter_space, data = df_data_treat, t  = v_times, simplify = FALSE)
+
+  ## Weights
   df_weights_psa  <- data.frame(tumour = df_data_treat$tumour,
                                 Clinical = rep(NA, length(df_data_treat$tumour)))
   for (tumour in df_data_treat$tumour){
     df_param_space <- l_parameter_space[[tumour]][ii,]
     df_weights_psa[df_weights_psa$tumour == tumour,]$Clinical = df_param_space$weights
-    
-    ## Surv
-    SoC_vec   <- data.frame(tumour      = tumour,
-                            PFS         = df_param_space$PFS_SoC,
-                            OS          = df_param_space$OS_SoC)
-    treat_vec <- data.frame(tumour      = tumour,
-                            at_risk_pfs = df_param_space$at_risk_pfs,
-                            PFS         = df_param_space$PFS_treat,
-                            t_max_pfs   = df_data_treat[df_data_treat$tumour == tumour,]$t_max_pfs,
-                            at_risk_os  = df_param_space$at_risk_os,
-                            OS          = df_param_space$OS_treat,
-                            t_max_os    = df_data_treat[df_data_treat$tumour == tumour,]$t_max_os)
-    
-    #SoC
-    l_curve_os_SoC  <- Exponential_Curve(SoC_vec$OS , v_times)
-    l_curve_pfs_SoC <- Exponential_Curve(SoC_vec$PFS, v_times)
-    
-    # treatment
-    if (switch_observed == 0){
-      # full extrapolation
-      l_curve_os_treat   <- Exponential_Curve(treat_vec$OS , v_times)
-      l_curve_pfs_treat  <- Exponential_Curve(treat_vec$PFS, v_times)
-    } else if (switch_observed == 1){
-      # restricted extrapolation - switch to SoC exponential rates after observed period
-      l_curve_os_treat  <- Exponential_Curve_Restricted(treat_vec$OS, treat_vec$at_risk_os,
-                                                        treat_vec$t_max_os, v_times, l_curve_os_SoC[[1]])
-      l_curve_pfs_treat <- Exponential_Curve_Restricted(treat_vec$PFS, treat_vec$at_risk_pfs,
-                                                        treat_vec$t_max_pfs, v_times, l_curve_pfs_SoC[[1]])
-    }
-    
-    l_curves_psa[[tumour]] <- list(os_SoC   = l_curve_os_SoC[[2]]  , pfs_SoC   = l_curve_pfs_SoC[[2]],
-                                   os_treat = l_curve_os_treat[[2]], pfs_treat = l_curve_pfs_treat[[2]])
-    
   }
   
   
@@ -200,7 +204,6 @@ Generate_Parameter_Space <- function(n_psa, seed = 50){
   # seed: seed for randomization
   # OUTPUTS
   # l_param_space: list per tumour containing all PSA parameters
-  
   
   set.seed(seed)
   
