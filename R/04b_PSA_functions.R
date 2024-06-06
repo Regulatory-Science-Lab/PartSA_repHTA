@@ -79,116 +79,100 @@ Parameter_Setup <- function(df_data_treat, l_parameter_space, ii){
   # Outputs: list containing costs, utilities, and survival data for treatment and SoC
   
   
-  ## Costs
-  # comparator
-  l_c_SoC <- lapply(l_parameter_space, function(x,i){
-    temp <- x[i,]
-    l_c_SoC <- list(
-      c_pfs  = temp$c_pfs_SoC,
-      c_P    = temp$c_P_SoC,
-      c_D    = temp$c_D_SoC,
-      c_AE   = temp$c_AE_SoC,
-      c_test = temp$c_test_SoC
-    )
-  }, i = ii)
-  
-  # intervention
-  l_c_treat <- lapply(l_parameter_space, function(x,i,t,ttot,c_p,c_p_P,c_a,c_a_P){
-    temp <- x[i,]
-    # progression-free
-    v_c_pfs_treat <- rep(temp$c_pfs_treat, length(t))
-    
-    # treatment costs up until time to off treatment
-    v_c_pack_treat_P <- rep(0, length(t))
-    v_c_pack_treat_P[1:which.min(abs(t - ttot))] <- c_p
-    # treatment administration costs up until time to off treatment
-    v_c_admin_treat_P <- rep(0, length(t))
-    v_c_admin_treat_P[1:which.min(abs(t - ttot))] <- c_a
-    # progressed
-    v_c_P_treat <- temp$c_P_treat + c_p_P + c_a_P
-    
-    # death 
-    v_c_D_treat <- rep(temp$c_D_treat, length(t))
-    
-    l_c_treat <- list(
-      c_pfs  = v_c_pfs_treat,
-      c_P    = v_c_P_treat,
-      c_D    = v_c_D_treat,
-      c_AE   = temp$c_AE_treat,
-      c_test = temp$c_test_treat
-    )
-  }, i = ii, t = v_times, ttot = ttot_fixed, c_p = c_pack_treat_fixed, 
-  c_p_P = c_pack_treat_P, c_a = c_admin_treat_fixed, c_a_P = c_admin_treat_P)
-  
-  
-  ## Utilities
-  l_u_treat <- lapply(l_parameter_space, function(x,i){
-    temp <- x[i,]
-    l_u_treat <- list(
-      u_pfs = temp$u_pfs_treat,
-      u_P   = temp$u_P_treat,
-      u_D   = temp$u_D
-    )
-  }, i = ii)
-  
-  l_u_SoC <- lapply(l_parameter_space, function(x,i){
-    temp <- x[i,]
-    l_u_SoC <- list(
-      u_pfs = temp$u_pfs_SoC,
-      u_P   = temp$u_P_SoC,
-      u_D   = temp$u_D
-    )
-  }, i = ii)
-  
-  
-  ## Survival curves
-  l_curves_psa <- sapply(names(l_parameter_space), function(x,i,params,data,t){
-    temp <- params[[x]][i,]
-    
-    SoC_vec   <- data.frame(tumour      = x,
-                            PFS         = temp$PFS_SoC,
-                            OS          = temp$OS_SoC)
-    treat_vec <- data.frame(tumour      = x,
-                            at_risk_pfs = temp$at_risk_pfs,
-                            PFS         = temp$PFS_treat,
-                            t_max_pfs   = data[data$tumour == x,]$t_max_pfs,
-                            at_risk_os  = temp$at_risk_os,
-                            OS          = temp$OS_treat,
-                            t_max_os    = data[data$tumour == x,]$t_max_os)
-    
-    #SoC
-    l_curve_os_SoC  <- Exponential_Curve(SoC_vec$OS , t)
-    l_curve_pfs_SoC <- Exponential_Curve(SoC_vec$PFS, t)
-    
-    # treatment
-    if (switch_observed == 0){
-      # full extrapolation
-      l_curve_os_treat   <- Exponential_Curve(treat_vec$OS , t)
-      l_curve_pfs_treat  <- Exponential_Curve(treat_vec$PFS, t)
-    } else if (switch_observed == 1){
-      # restricted extrapolation - switch to SoC exponential rates after observed period
-      l_curve_os_treat  <- Exponential_Curve_Restricted(treat_vec$OS, treat_vec$at_risk_os,
-                                                        treat_vec$t_max_os, t, l_curve_os_SoC[[1]])
-      l_curve_pfs_treat <- Exponential_Curve_Restricted(treat_vec$PFS, treat_vec$at_risk_pfs,
-                                                        treat_vec$t_max_pfs, t, l_curve_pfs_SoC[[1]])
-    }
-    
-    
-    return(list(os_SoC = l_curve_os_SoC[[2]], pfs_SoC = l_curve_pfs_SoC[[2]],
-                os_treat = l_curve_os_treat[[2]], pfs_treat = l_curve_pfs_treat[[2]]))
-    
-    
-  }, i = ii, params = l_parameter_space, data = df_data_treat, t  = v_times, simplify = FALSE)
-
-  ## Weights
-  df_weights_psa  <- data.frame(tumour = df_data_treat$tumour,
+  l_c_treat       <- list()
+  l_c_SoC         <- list()
+  l_u_treat       <- list()
+  l_u_SoC         <- list()
+  l_curves_psa    <- list()
+  df_weights_psa  <- data.frame(tumour = df_data_treat$tumour, 
                                 Clinical = rep(NA, length(df_data_treat$tumour)))
   for (tumour in df_data_treat$tumour){
     df_param_space <- l_parameter_space[[tumour]][ii,]
     df_weights_psa[df_weights_psa$tumour == tumour,]$Clinical = df_param_space$weights
+    
+    
+    ## Costs
+    
+    # SoC
+    l_c_SoC[[tumour]] <- list(
+      c_pfs  = df_param_space$c_pfs_SoC,
+      c_P    = df_param_space$c_P_SoC,
+      c_D    = df_param_space$c_D_SoC,
+      c_AE   = df_param_space$c_AE_SoC,
+      c_test = df_param_space$c_test_SoC
+    )
+    
+    # treatment
+    # progression-free
+    v_c_pfs_treat <- rep(df_param_space$c_pfs_treat, length(v_times))
+    
+    # treatment costs up until time to off treatment
+    v_c_pack_treat_P <- rep(0, length(v_times))
+    v_c_pack_treat_P[1:which.min(abs(v_times - ttot_fixed))] <- c_pack_treat_fixed
+    # treatment administration costs up until time to off treatment
+    v_c_admin_treat_P <- rep(0, length(v_times))
+    v_c_admin_treat_P[1:which.min(abs(v_times - ttot_fixed))] <- c_admin_treat_fixed
+    # progressed
+    v_c_P_treat <- df_param_space$c_P_treat + c_pack_treat_P + c_admin_treat_P
+    
+    # death
+    v_c_D_treat <- rep(df_param_space$c_D_treat, length(v_times))
+    
+    l_c_treat[[tumour]] <- list(
+      c_pfs  = v_c_pfs_treat,
+      c_P    = v_c_P_treat,
+      c_D    = v_c_D_treat,
+      c_AE   = df_param_space$c_AE_treat,
+      c_test = df_param_space$c_test_treat
+    )
+    
+    ## Uilities
+    l_u_treat[[tumour]] <- list(
+      u_pfs = df_param_space$u_pfs_treat,
+      u_P   = df_param_space$u_P_treat,
+      u_D   = df_param_space$u_D
+    )
+    l_u_SoC[[tumour]] <- list(
+      u_pfs = df_param_space$u_pfs_SoC,
+      u_P   = df_param_space$u_P_SoC,
+      u_D   = df_param_space$u_D
+    )
+    
+    ## Surv
+    SoC_vec   <- data.frame(tumour      = tumour,
+                            PFS         = df_param_space$PFS_SoC,
+                            OS          = df_param_space$OS_SoC)
+    treat_vec <- data.frame(tumour      = tumour,
+                            at_risk_pfs = df_param_space$at_risk_pfs,
+                            PFS         = df_param_space$PFS_treat,
+                            t_max_pfs   = df_data_treat[df_data_treat$tumour == tumour,]$t_max_pfs,
+                            at_risk_os  = df_param_space$at_risk_os,
+                            OS          = df_param_space$OS_treat,
+                            t_max_os    = df_data_treat[df_data_treat$tumour == tumour,]$t_max_os)
+    
+    #SoC
+    l_curve_os_SoC  <- Exponential_Curve(SoC_vec$OS , v_times)
+    l_curve_pfs_SoC <- Exponential_Curve(SoC_vec$PFS, v_times)
+    
+    # treatment
+    if (switch_observed == 0){
+      # full extrapolation
+      l_curve_os_treat   <- Exponential_Curve(treat_vec$OS , v_times)
+      l_curve_pfs_treat  <- Exponential_Curve(treat_vec$PFS, v_times)
+    } else if (switch_observed == 1){
+      # restricted extrapolation - switch to SoC exponential rates after observed period
+      l_curve_os_treat  <- Exponential_Curve_Restricted(treat_vec$OS, treat_vec$at_risk_os, 
+                                                        treat_vec$t_max_os, v_times, l_curve_os_SoC[[1]])
+      l_curve_pfs_treat <- Exponential_Curve_Restricted(treat_vec$PFS, treat_vec$at_risk_pfs, 
+                                                        treat_vec$t_max_pfs, v_times, l_curve_pfs_SoC[[1]])
+    }
+    
+    l_curves_psa[[tumour]] <- list(os_SoC   = l_curve_os_SoC[[2]]  , pfs_SoC   = l_curve_pfs_SoC[[2]], 
+                                   os_treat = l_curve_os_treat[[2]], pfs_treat = l_curve_pfs_treat[[2]])
+    
   }
   
-  
+
   Outputs <- list(l_c_SoC = l_c_SoC, l_c_treat = l_c_treat,
                   l_u_SoC = l_u_SoC, l_u_treat = l_u_treat,
                   l_curves_psa = l_curves_psa, weights = df_weights_psa)
