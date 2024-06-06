@@ -20,9 +20,9 @@ run_PSA <- function(df_data_treat, df_data_SoC, n_psa, seed,
   ## generate parameter space
   l_parameter_space <- Generate_Parameter_Space(n_psa, seed)
   
-  
   ## run PartSA for each parameter set
-  l_PSA_stratified <- list()
+  l_PSA_stratified <- vector(mode = "list", length = length(v_tumour))
+  names(l_PSA_stratified) <- v_tumour
   df_PSA_weighted  <- data.frame()
   for (i in 1:n_psa){
     temp <- Parameter_Setup(df_data_treat, l_parameter_space, i)
@@ -36,34 +36,35 @@ run_PSA <- function(df_data_treat, df_data_SoC, n_psa, seed,
     ## Run Analysis
     # summary outputs only and no plots 
     l_outcomes <- run_PartSA(df_data_treat, l_curves_psa, l_c_treat_psa, l_c_SoC_psa, 
-                           l_u_treat_psa, l_u_SoC_psa, v_times, df_weights_psa, 
-                           switch_observed, switch_summary = 1, 
-                           switch_plot = 0)
-    
+                             l_u_treat_psa, l_u_SoC_psa, v_times, df_weights_psa, 
+                             switch_observed, switch_summary = 1, 
+                             switch_plot = 0)
     
     ## store individual and weighted outcomes
     
     # individual
     for (tumour in v_tumour){
-      l_PSA_stratified[[tumour]] <- rbind(l_PSA_stratified[[tumour]], 
+      l_PSA_stratified[[tumour]] <- rbind(l_PSA_stratified[[tumour]],
                                           l_outcomes$stratified_outcomes[tumour,])
     }
-
+    
     # weighted
     df_PSA_weighted <- rbind(df_PSA_weighted, l_outcomes$weighted_outcomes)
   }
   
-  # create PSA object per tumour indication
+  
   l_PSA_obj <- list()
   for (tumour in v_tumour){
     l_PSA_obj[[tumour]] <- make_psa_obj(cost          = as.data.frame(l_PSA_stratified[[tumour]][,c(1,4)]),
                                         effectiveness = as.data.frame(l_PSA_stratified[[tumour]][,c(3,6)]),
-                                        parameters    = l_outcomes$parameter_space[[tumour]],
+                                        parameters    = l_parameter_space[[tumour]],
                                         strategies    = v_treat_names)
   }
   
+  l_PSA_results <- list(stratified_outcomes = l_PSA_stratified, 
+                        stratified_obj = l_PSA_obj, 
+                        weighted_outcomes = df_PSA_weighted)
   
-  l_PSA_results <- list(stratified_outcomes = l_PSA_stratified, stratified_obj = l_PSA_obj, weighted_outcomes = df_PSA_weighted)
   return(l_PSA_results)
   
 }
@@ -71,70 +72,83 @@ run_PSA <- function(df_data_treat, df_data_SoC, n_psa, seed,
 Parameter_Setup <- function(df_data_treat, l_parameter_space, ii){
   ## function to convert PSA parameters into PartSA input format
   # INPUTS
-    # df_data_treat: survival data for treatment
-    # l_parameter_space: set of PSA parameters
-    # ii: number corresponding to the PSA run
+  # df_data_treat: survival data for treatment
+  # l_parameter_space: set of PSA parameters
+  # ii: number corresponding to the PSA run
   # OUTPUTS
-    # Outputs: list containing costs, utilities, and survival data for treatment and SoC
+  # Outputs: list containing costs, utilities, and survival data for treatment and SoC
   
-  l_c_treat       <- list()
-  l_c_SoC         <- list()
-  l_u_treat       <- list()
-  l_u_SoC         <- list()
+  
+  ## Costs
+  l_c_SoC <- lapply(l_parameter_space, function(x,i){
+    temp <- x[i,]
+    # SoC
+    l_c_SoC <- list(
+      c_pfs  = temp$c_pfs_SoC,
+      c_P    = temp$c_P_SoC,
+      c_D    = temp$c_D_SoC,
+      c_AE   = temp$c_AE_SoC,
+      c_test = temp$c_test_SoC
+    )
+  }, i = ii)
+  
+  
+  l_c_treat <- lapply(l_parameter_space, function(x,i,t,ttot,c_p,c_p_P,c_a,c_a_P){
+    temp <- x[i,]
+    # progression-free
+    v_c_pfs_treat <- rep(temp$c_pfs_treat, length(t))
+    
+    # treatment costs up until time to off treatment
+    v_c_pack_treat_P <- rep(0, length(t))
+    v_c_pack_treat_P[1:which.min(abs(t - ttot))] <- c_p
+    # treatment administration costs up until time to off treatment
+    v_c_admin_treat_P <- rep(0, length(t))
+    v_c_admin_treat_P[1:which.min(abs(t - ttot))] <- c_a
+    # progressed
+    v_c_P_treat <- temp$c_P_treat + c_p_P + c_a_P
+    
+    # death 
+    v_c_D_treat <- rep(temp$c_D_treat, length(t))
+    
+    l_c_treat <- list(
+      c_pfs  = v_c_pfs_treat,
+      c_P    = v_c_P_treat,
+      c_D    = v_c_D_treat,
+      c_AE   = temp$c_AE_treat,
+      c_test = temp$c_test_treat
+    )
+  }, i = ii, t = v_times, ttot = ttot_fixed, c_p = c_pack_treat_fixed, 
+  c_p_P = c_pack_treat_P, c_a = c_admin_treat_fixed, c_a_P = c_admin_treat_P)
+  
+  
+  ## Utilities
+  
+  l_u_treat <- lapply(l_parameter_space, function(x,i){
+    temp <- x[i,]
+    l_u_treat <- list(
+      u_pfs = temp$u_pfs_treat,
+      u_P   = temp$u_P_treat,
+      u_D   = temp$u_D
+    )
+  }, i = ii)
+  
+  l_u_SoC <- lapply(l_parameter_space, function(x,i){
+    temp <- x[i,]
+    l_u_SoC <- list(
+      u_pfs = temp$u_pfs_SoC,
+      u_P   = temp$u_P_SoC,
+      u_D   = temp$u_D
+    )
+  }, i = ii)
+  print(Sys.time()-st)
+  
+  
   l_curves_psa    <- list()
-  df_weights_psa  <- data.frame(tumour = df_data_treat$tumour, 
+  df_weights_psa  <- data.frame(tumour = df_data_treat$tumour,
                                 Clinical = rep(NA, length(df_data_treat$tumour)))
   for (tumour in df_data_treat$tumour){
     df_param_space <- l_parameter_space[[tumour]][ii,]
     df_weights_psa[df_weights_psa$tumour == tumour,]$Clinical = df_param_space$weights
-    
-    
-    ## Costs
-    
-    # SoC
-    l_c_SoC[[tumour]] <- list(
-      c_pfs  = df_param_space$c_pfs_SoC,
-      c_P    = df_param_space$c_P_SoC,
-      c_D    = df_param_space$c_D_SoC,
-      c_AE   = df_param_space$c_AE_SoC,
-      c_test = df_param_space$c_test_SoC
-    )
-    
-    # treatment
-    # progression-free
-    v_c_pfs_treat <- rep(df_param_space$c_pfs_treat, length(v_times))
-    
-    # treatment costs up until time to off treatment
-    v_c_pack_treat_P <- rep(0, length(v_times))
-    v_c_pack_treat_P[1:which.min(abs(v_times - ttot_fixed))] <- c_pack_treat_fixed
-    # treatment administration costs up until time to off treatment
-    v_c_admin_treat_P <- rep(0, length(v_times))
-    v_c_admin_treat_P[1:which.min(abs(v_times - ttot_fixed))] <- c_admin_treat_fixed
-    # progressed
-    v_c_P_treat <- df_param_space$c_P_treat + c_pack_treat_P + c_admin_treat_P
-    
-    # death
-    v_c_D_treat <- rep(df_param_space$c_D_treat, length(v_times))
-    
-    l_c_treat[[tumour]] <- list(
-      c_pfs  = v_c_pfs_treat,
-      c_P    = v_c_P_treat,
-      c_D    = v_c_D_treat,
-      c_AE   = df_param_space$c_AE_treat,
-      c_test = df_param_space$c_test_treat
-    )
-    
-    ## Uilities
-    l_u_treat[[tumour]] <- list(
-      u_pfs = df_param_space$u_pfs_treat,
-      u_P   = df_param_space$u_P_treat,
-      u_D   = df_param_space$u_D
-    )
-    l_u_SoC[[tumour]] <- list(
-      u_pfs = df_param_space$u_pfs_SoC,
-      u_P   = df_param_space$u_P_SoC,
-      u_D   = df_param_space$u_D
-    )
     
     ## Surv
     SoC_vec   <- data.frame(tumour      = tumour,
@@ -159,13 +173,13 @@ Parameter_Setup <- function(df_data_treat, l_parameter_space, ii){
       l_curve_pfs_treat  <- Exponential_Curve(treat_vec$PFS, v_times)
     } else if (switch_observed == 1){
       # restricted extrapolation - switch to SoC exponential rates after observed period
-      l_curve_os_treat  <- Exponential_Curve_Restricted(treat_vec$OS, treat_vec$at_risk_os, 
+      l_curve_os_treat  <- Exponential_Curve_Restricted(treat_vec$OS, treat_vec$at_risk_os,
                                                         treat_vec$t_max_os, v_times, l_curve_os_SoC[[1]])
-      l_curve_pfs_treat <- Exponential_Curve_Restricted(treat_vec$PFS, treat_vec$at_risk_pfs, 
+      l_curve_pfs_treat <- Exponential_Curve_Restricted(treat_vec$PFS, treat_vec$at_risk_pfs,
                                                         treat_vec$t_max_pfs, v_times, l_curve_pfs_SoC[[1]])
     }
     
-    l_curves_psa[[tumour]] <- list(os_SoC   = l_curve_os_SoC[[2]]  , pfs_SoC   = l_curve_pfs_SoC[[2]], 
+    l_curves_psa[[tumour]] <- list(os_SoC   = l_curve_os_SoC[[2]]  , pfs_SoC   = l_curve_pfs_SoC[[2]],
                                    os_treat = l_curve_os_treat[[2]], pfs_treat = l_curve_pfs_treat[[2]])
     
   }
@@ -213,7 +227,7 @@ Generate_Parameter_Space <- function(n_psa, seed = 50){
     dist <- param_dist(df_costs_agnostic[df_costs_agnostic$parameter == var,], n_psa)
     assign(name, dist)
   }
-
+  
   ## Tumour specific parameters
   l_param_space <- list()
   for (tumour in v_tumour){
@@ -241,11 +255,11 @@ Generate_Parameter_Space <- function(n_psa, seed = 50){
       c_test_SoC   = v_c_test_SoC_psa,     
       c_D_treat    = v_c_D_psa,            
       c_pfs_treat  = v_c_admin_treat_psa + v_c_care_pfs_treat_psa + 
-                     v_c_noncancer_psa + v_c_pack_treat_psa,
+        v_c_noncancer_psa + v_c_pack_treat_psa,
       c_P_treat    = v_c_care_P_psa + v_c_noncancer_psa,
       c_D_SoC      = v_c_D_psa,
       c_pfs_SoC    = v_c_admin_SoC_psa + v_c_care_pfs_SoC_psa + 
-                     v_c_pack_SoC_psa + v_c_noncancer_psa,
+        v_c_pack_SoC_psa + v_c_noncancer_psa,
       c_P_SoC      = v_c_care_P_psa + v_c_noncancer_psa,
       c_AE_SoC     = v_c_AE_SoC_psa,
       c_AE_treat   = v_c_AE_treat_psa,
@@ -313,19 +327,19 @@ param_dist <- function(df_params, n_psa, upper = NULL, lower = NULL){
   v_distribution <- rep(NA, n_psa)
   if (df_params$dist == "normal"){
     v_distribution[2:n_psa] <- rnorm(n_psa - 1, as.numeric(df_params$par1),
-                                   as.numeric(df_params$par2))
+                                     as.numeric(df_params$par2))
   }
   else if (df_params$dist == "truncated normal"){
     v_distribution[2:n_psa] <- rtruncnorm(n_psa - 1, a = 0, mean = as.numeric(df_params$par1),
-                                        sd = as.numeric(df_params$par2))
+                                          sd = as.numeric(df_params$par2))
   } else if (df_params$dist == "uniform"){
     v_distribution[2:n_psa] <- runif(n_psa - 1, as.numeric(df_params$par1),
-                                   as.numeric(df_params$par2))
+                                     as.numeric(df_params$par2))
   } else if(df_params$dist == "fixed"){
     v_distribution[2:n_psa] <- rep(as.numeric(df_params$value), n_psa - 1)
   } else if (df_params$dist == "beta"){
     v_distribution[2:n_psa] <- rbeta(n_psa - 1, as.numeric(df_params$par1),
-                                   as.numeric(df_params$par2))
+                                     as.numeric(df_params$par2))
   } else if (df_params$dist == "beta estimate") {
     # estimate beta distribution parameters from 95% CI
     temp   <- prevalence::betaExpert(best  = df_params$value, lower = as.numeric(df_params$par1), 
@@ -344,11 +358,11 @@ param_dist <- function(df_params, n_psa, upper = NULL, lower = NULL){
 Survival_PSA_Parameters <- function(df_data_SoC, df_data_treat, n_psa){
   # function to calculate PSA parameters for median/critical point survival data
   # INPUTS
-    # df_data_SoC: survival data for SoC, contains distribution information
-    # df_data_treat: survival data for treatment, contains distribution information
-    # n_psa: number of PSA runs
+  # df_data_SoC: survival data for SoC, contains distribution information
+  # df_data_treat: survival data for treatment, contains distribution information
+  # n_psa: number of PSA runs
   # OUTPUTS
-    # df_results: data frame containing OS, PFS, and at risk proportion for SoC and treatment
+  # df_results: data frame containing OS, PFS, and at risk proportion for SoC and treatment
   
   ## SoC
   os_params_SoC  <- c(df_data_SoC$par1_os,  df_data_SoC$par2_os )
@@ -364,7 +378,7 @@ Survival_PSA_Parameters <- function(df_data_SoC, df_data_treat, n_psa){
     # use OS as max for truncated normal
     v_PFS_SoC[i] <- surv_dist(pfs_params_SoC, df_data_SoC$dist_pfs, 1, max = v_OS_SoC[i])
   }
-
+  
   ## Treatment
   if (is.na(df_data_treat$t_max_os)){
     # if t_max is NA, then SoC efficacy is assumed throughout
@@ -433,12 +447,12 @@ Survival_PSA_Parameters <- function(df_data_SoC, df_data_treat, n_psa){
 surv_dist <- function(v_params, dist, n_psa, max = ""){
   ## construct distribution based on distribution type and parameters
   # INPUTS
-    # v_params: vector containing the parameters needed to fit distribution
-    # dist: distribution type (e.g. normal, beta)
-    # n_psa: number of parameters to produce
-    # max: upper limit for truncated normal for PFS, where needed
+  # v_params: vector containing the parameters needed to fit distribution
+  # dist: distribution type (e.g. normal, beta)
+  # n_psa: number of parameters to produce
+  # max: upper limit for truncated normal for PFS, where needed
   # OUTPUTS
-    # v_dist: distribution for the chosen parameter
+  # v_dist: distribution for the chosen parameter
   
   if (dist == "normal") {
     v_dist <- rnorm(n_psa, mean = v_params[1], sd = v_params[2])
