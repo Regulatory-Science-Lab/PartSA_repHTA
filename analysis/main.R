@@ -4,28 +4,14 @@
 
 ## Install/Load Required Packages
 
-install.packages('pacman')
+install.packages(c('pacman', 'devtools'))
+library('devtools')
+install_github('DARTH-git/dampack'); library(dampack)
+
 library('pacman')
-
-pacman::p_load('remotes','survival','readxl','MCMCpack','prevalence',
-               'xlsx', 'openxlsx','tidyverse','dampack','truncnorm')
-
-
-
-# install.packages(c('remotes','survival','readxl','MCMCpack','prevalence',
-                   # 'xlsx', 'openxlsx','tidyverse','dampack','truncnorm'))
-# library(remotes)
-# library(survival)
-# library(readxl)
-# library(dplyr)
-# library(truncnorm)
-# library(MCMCpack)
-# library(prevalence)
-# library(xlsx)
-# library(openxlsx)
-# library(tidyverse)
-# library(ggplot2)
-# library(dampack)
+# package 'xlsx' requires Java installation
+pacman::p_load('remotes','survival','prevalence', 'xlsx', 'readxl','MCMCpack', 'openxlsx',
+               'tidyverse','truncnorm')
 
 
 ## Load workspace and parameters
