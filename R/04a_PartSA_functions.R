@@ -25,26 +25,14 @@ run_PartSA <- function(df_data_treat, l_curves, l_c_treat, l_c_SoC, l_u_treat,
   l_trace_SoC   <- lapply(l_curves, function(x) Part_Surv(x$pfs_SoC  , x$os_SoC))
   l_trace_treat <- lapply(l_curves, function(x) Part_Surv(x$pfs_treat, x$os_treat))
   
-  l_out_SoC     <- list()
-  l_out_treat   <- list()
-  for (tumour in df_data_treat$tumour){
-    
-    
-    ## Calculate costs and effects
-    l_out_SoC[[tumour]]   <- Calculate_Cost_QALY(l_trace_SoC[[tumour]], l_c_SoC[[tumour]], 
-                                                 l_u_SoC[[tumour]], v_discount_c, 
-                                                 v_discount_q)
-    
-    l_out_treat[[tumour]] <- Calculate_Cost_QALY(l_trace_treat[[tumour]], l_c_treat[[tumour]], 
-                                                 l_u_treat[[tumour]], v_discount_c, 
-                                                 v_discount_q, switch_vec_cost = 1)
-    
-    ## Plotting
-    if (switch_plot == 1){
-      Create_Plots(l_curves[[tumour]], l_trace_treat[[tumour]], l_trace_SoC[[tumour]], v_times, 
-                   tumour, t_max = df_data_treat[df_data_treat$tumour == tumour,]$t_max_pfs)
-    }
-  }
+  ## Calculate costs and QALYs
+  l_out_SoC <- mapply(Calculate_Cost_QALY, l_trace_SoC, l_c_SoC, l_u_SoC,
+                      MoreArgs = list(v_discount_cost = v_discount_c, 
+                                      v_discount_qaly = v_discount_q), SIMPLIFY = FALSE)
+  l_out_treat <- mapply(Calculate_Cost_QALY, l_trace_treat, l_c_treat, l_u_treat,
+                        MoreArgs = list(v_discount_cost = v_discount_c, 
+                                        v_discount_qaly = v_discount_q,
+                                        switch_vec_cost = 1), SIMPLIFY = FALSE)
   
   ## Calculate incremental
   # create list of t_max
@@ -54,7 +42,14 @@ run_PartSA <- function(df_data_treat, l_curves, l_c_treat, l_c_SoC, l_u_treat,
   l_incremental <- mapply(Calculate_Incremental, l_out_treat, l_out_SoC, l_t_max,
                           MoreArgs = list(v_times = v_times), SIMPLIFY = FALSE)
   
-  
+  ## Plotting
+  if (switch_plot == 1){
+    for (tumour in df_data_treat$tumour){
+      Create_Plots(l_curves[[tumour]], l_trace_treat[[tumour]], l_trace_SoC[[tumour]], v_times,
+                   tumour, t_max = df_data_treat[df_data_treat$tumour == tumour,]$t_max_pfs)
+    }
+  }
+
   
   
   ## Results
