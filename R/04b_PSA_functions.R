@@ -111,7 +111,7 @@ Parameter_Setup <- function(df_data_treat, l_parameter_space, ii){
     v_c_admin_treat_P <- rep(0, length(v_times))
     v_c_admin_treat_P[1:which.min(abs(v_times - ttot_fixed))] <- c_admin_treat_fixed
     # progressed
-    v_c_P_treat <- df_param_space$c_P_treat + c_pack_treat_P + c_admin_treat_P
+    v_c_P_treat <- df_param_space$c_P_treat + v_c_pack_treat_P + v_c_admin_treat_P
     
     # death
     v_c_D_treat <- rep(df_param_space$c_D_treat, length(v_times))
