@@ -3,13 +3,10 @@
 # Author G. Cupples, E.Krebs. 10/10/2023
 
 ## Install/Load Required Packages
-install.packages(c('pacman', 'devtools'))
-library('devtools')
-install_github('DARTH-git/dampack') 
-library(dampack)
-
+library('dampack')
 library('pacman')
 # package 'xlsx' requires Java installation
+# MCMCpack requires JAGS installation
 pacman::p_load('remotes','survival','prevalence', 'xlsx', 'readxl','MCMCpack', 'openxlsx',
                'tidyverse','truncnorm')
 
