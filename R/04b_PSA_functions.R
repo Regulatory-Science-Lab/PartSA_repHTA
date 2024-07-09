@@ -258,19 +258,6 @@ Generate_Parameter_Space <- function(n_psa, seed = 50){
       
     )
     
-    ## Survival
-    # survival parameters based off median values
-    Surv <- Survival_PSA_Parameters(df_data_SoC[df_data_SoC$tumour == tumour,], 
-                                    df_data_treat[df_data_treat$tumour == tumour,], n_psa)
-    
-    df_param_space$OS_SoC      <- Surv$v_OS_SoC
-    df_param_space$PFS_SoC     <- Surv$v_PFS_SoC
-    
-    df_param_space$OS_treat    <- Surv$v_OS_treat
-    df_param_space$at_risk_os  <- Surv$v_at_risk_os
-    df_param_space$PFS_treat   <- Surv$v_PFS_treat
-    df_param_space$at_risk_pfs <- Surv$v_at_risk_pfs
-    
     l_param_space[[tumour]] <- df_param_space
     
   }
@@ -295,6 +282,24 @@ Generate_Parameter_Space <- function(n_psa, seed = 50){
   
   for (tumour in v_tumour){
     l_param_space[[tumour]]$c_test_treat <- df_c_test_treat_psa[[tumour]]
+  }
+  
+  ## Survival
+  set.seed(seed)
+  for (tumour in v_tumour){
+    # survival parameters based off median values
+    Surv <- Survival_PSA_Parameters(df_data_SoC[df_data_SoC$tumour == tumour,], 
+                                    df_data_treat[df_data_treat$tumour == tumour,], 
+                                    n_psa)
+    
+    l_param_space[[tumour]]$OS_SoC      <- Surv$v_OS_SoC
+    l_param_space[[tumour]]$PFS_SoC     <- Surv$v_PFS_SoC
+    
+    l_param_space[[tumour]]$OS_treat    <- Surv$v_OS_treat
+    l_param_space[[tumour]]$at_risk_os  <- Surv$v_at_risk_os
+    l_param_space[[tumour]]$PFS_treat   <- Surv$v_PFS_treat
+    l_param_space[[tumour]]$at_risk_pfs <- Surv$v_at_risk_pfs
+    
   }
   
   return(l_param_space)
@@ -483,24 +488,24 @@ PSA_frontier <- function(v_tumour_groups, outcomes_PSA, save_name){
       comb_sub   <- combs[[ind]][,comb_ind]
       save_ind <- save_ind + 1
       # sum the costs/qalys/icer for each run for all tumour combinations
-      v_cost <- vector(mode = "numeric", length = nrow(outcomes_PSA$weighted_outcomes))
-      v_qaly <- vector(mode = "numeric", length = nrow(outcomes_PSA$weighted_outcomes))
-      v_icer <- vector(mode = "numeric", length = nrow(outcomes_PSA$weighted_outcomes))
+      v_cost <- 0
+      v_qaly <- 0
+      v_icer <- 0
       for (tumour in comb_sub){
-        v_cost <- v_cost + outcomes_PSA$stratified_outcomes[[tumour]]$Inc_Cost
-        v_qaly <- v_qaly + outcomes_PSA$stratified_outcomes[[tumour]]$Inc_QALYs
+        v_cost <- v_cost + mean(outcomes_PSA$stratified_outcomes[[tumour]]$Inc_Cost)
+        v_qaly <- v_qaly + mean(outcomes_PSA$stratified_outcomes[[tumour]]$Inc_QALYs)
       }
       v_icer <- v_cost / v_qaly
+
       l_totals[[save_ind]] <- data.frame(Combination = paste(comb_sub, collapse = ", "),
-                                         Costs = mean(v_cost), 
-                                         QALYs = mean(v_qaly),
-                                         ICERs = mean(v_icer))
+                                         Costs = v_cost, 
+                                         QALYs = v_qaly,
+                                         ICERs = v_icer)
     }
     
   }
   
   df_summary_totals <- do.call("rbind", l_totals)
-  write.csv(df_summary_totals, save_name)
   
   return(df_summary_totals)
 }
