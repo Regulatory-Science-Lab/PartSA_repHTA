@@ -507,6 +507,8 @@ PSA_frontier <- function(v_tumour_groups, outcomes_PSA, save_name){
   
   df_summary_totals <- do.call("rbind", l_totals)
   
+  write.csv(df_summary_totals, save_name)
+  
   return(df_summary_totals)
 }
 
