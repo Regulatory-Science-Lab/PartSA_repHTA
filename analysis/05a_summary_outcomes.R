@@ -48,9 +48,13 @@ Prop_CE <- function(ICER, WTP){
 ## Pooled ##
 
 # columns to find summary for
-sum_cols <- c("Inc_Cost","Inc_QALYs","ICER","NMB_50000", "NMB_100000")
+sum_cols <- c("Inc_Cost","Inc_QALYs","NMB_50000", "NMB_100000")
 # get summary statistics for all included columns
 df_pooled_summary <- sapply(l_outcomes_PSA$weighted_outcomes[,sum_cols], Summary_Outcomes)
+
+summary_icer <- Summary_Outcomes(l_outcomes_PSA$weighted_outcomes$ICER[l_outcomes_PSA$weighted_outcomes$Inc_QALYs > 0])
+
+df_pooled_summary <- cbind(df_pooled_summary, t(summary_icer))
 
 # calculation proportion of dominated runs
 prop_dominated <- Prop_Dom(l_outcomes_PSA$weighted_outcomes)
@@ -71,18 +75,24 @@ write.csv(df_pooled_summary, paste("outputs/PSA_summary_pooled_observed_", switc
 # mean, 95% CI, median, IQR - Inc Cost, Inc QALY, ICER
 l_strat_summary <- list()
 for (tumour in v_tumour){
+  
+  tumour_results <- l_outcomes_PSA$stratified_outcomes[[tumour]]
   # columns to find summary for
-  sum_cols <- c("Inc_Cost","Inc_QALYs","ICER","NMB_50000", "NMB_100000")
+  sum_cols <- c("Inc_Cost","Inc_QALYs","NMB_50000", "NMB_100000")
   # get summary statistics for all included columns
-  df_summary <- sapply(l_outcomes_PSA$stratified_outcomes[[tumour]][,sum_cols], Summary_Outcomes)
+  df_summary <- sapply(tumour_results[,sum_cols], Summary_Outcomes)
+  
+  summary_icer <- Summary_Outcomes(tumour_results$ICER[tumour_results$Inc_QALYs > 0])
+  
+  df_summary <- cbind(df_summary, t(summary_icer))
   
   # calculation proportion of dominated runs
-  prop_dom_ts <- Prop_Dom(l_outcomes_PSA$stratified_outcomes[[tumour]])
+  prop_dom_ts <- Prop_Dom(tumour_results)
   df_summary <- cbind(df_summary, prop_dom_ts)
   
   # proportion of Cost-effective runs at WTP $100,000 and $200,000
-  prop_ce_1 <- Prop_CE(l_outcomes_PSA$stratified_outcomes[[tumour]]$ICER, WTP = 50000)
-  prop_ce_2 <- Prop_CE(l_outcomes_PSA$stratified_outcomes[[tumour]]$ICER, WTP = 100000)
+  prop_ce_1 <- Prop_CE(tumour_results$ICER, WTP = 50000)
+  prop_ce_2 <- Prop_CE(tumour_results$ICER, WTP = 100000)
   df_summary <- cbind(df_summary, prop_ce_1)
   df_summary <- cbind(df_summary, prop_ce_2)
 

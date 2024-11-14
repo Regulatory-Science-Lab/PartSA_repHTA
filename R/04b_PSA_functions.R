@@ -488,19 +488,20 @@ PSA_frontier <- function(v_tumour_groups, outcomes_PSA, save_name){
       comb_sub   <- combs[[ind]][,comb_ind]
       save_ind <- save_ind + 1
       # sum the costs/qalys/icer for each run for all tumour combinations
-      v_cost <- 0
-      v_qaly <- 0
-      v_icer <- 0
+      v_cost <- rep(0, n_psa)
+      v_qaly <- rep(0, n_psa)
+      v_icer <- rep(0, n_psa)
       for (tumour in comb_sub){
-        v_cost <- v_cost + mean(outcomes_PSA$stratified_outcomes[[tumour]]$Inc_Cost)
-        v_qaly <- v_qaly + mean(outcomes_PSA$stratified_outcomes[[tumour]]$Inc_QALYs)
+        v_cost <- v_cost + outcomes_PSA$stratified_outcomes[[tumour]]$Inc_Cost
+        v_qaly <- v_qaly + outcomes_PSA$stratified_outcomes[[tumour]]$Inc_QALYs
+        v_icer <- v_icer + outcomes_PSA$stratified_outcomes[[tumour]]$ICER
       }
       v_icer <- v_cost / v_qaly
 
       l_totals[[save_ind]] <- data.frame(Combination = paste(comb_sub, collapse = ", "),
-                                         Costs = v_cost, 
-                                         QALYs = v_qaly,
-                                         ICERs = v_icer)
+                                         Costs = mean(v_cost), 
+                                         QALYs = mean(v_qaly),
+                                         ICERs = mean(v_icer[v_qaly > 0]))
     }
     
   }
