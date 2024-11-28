@@ -17,7 +17,7 @@ PSA.outputs %>% mutate(dominated = ifelse(Inc_QALYs>0, "#0482c9", "#acadad")) %>
   scale_color_identity() +
   geom_vline(xintercept = 0, linewidth = 1) +
   geom_hline(yintercept = 0, linewidth = 1) +
-  xlim(-0.5, 0.5) +
+  xlim(-1, 1) +
   geom_abline(intercept = 0, slope = 100000, color = "#662506", lwd = 1.2) +
   annotate(geom = "text", label = "ICER: $100,000/QALY", size = 5,
            x = .21, y = 120000, color = "#662506", hjust = 0) +
