@@ -11,7 +11,7 @@ dir_name <- file.path("outputs")
 if (!dir.exists(dir_name)) dir.create(dir_name)
 
 # save outputs
-psa_save <- paste("prob_medsurv_observed_", switch_observed, 
+psa_save <- paste("prob_observed_", switch_observed, 
                   "_test_", switch_test,".rds", sep = "")
 save(l_outcomes_PSA, file = file.path(dir_name, psa_save))
 
