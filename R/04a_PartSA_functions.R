@@ -301,10 +301,12 @@ Deterministic_Frontier <- function(v_tumour_groups, df_outcomes, save_name){
       # sum incremental
       sum_costs <- sum(df_outcomes[comb_sub,]$Inc_Cost)
       sum_QALYs <- sum(df_outcomes[comb_sub,]$Inc_QALY)
+      ICER <- sum_costs / sum_QALYs
       
       totals[[save_ind]] <- data.frame(Combination = paste(comb_sub, collapse = ", "),
                                        Costs = sum_costs, 
-                                       QALYs = sum_QALYs)
+                                       QALYs = sum_QALYs,
+                                       ICERs = ICER)
     }
     
   }
