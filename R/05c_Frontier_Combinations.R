@@ -69,14 +69,14 @@ Frontier_Combinations <- function(totals){
   qalyCol <- which(colnames(frontier.matrix)=="QALYs")
   
   if (any(frontier.matrix$Costs < 0)){
-    frontier.matrix$ICERs[frontier.matrix$Costs < 0] <- "CS"
+    frontier.matrix$ICER_front[frontier.matrix$Costs < 0] <- "CS"
     NCS  <- sum(frontier.matrix$Costs < 0)  #number of cost savings
     if (NCS == nrow(frontier.matrix)){
       ocis       <- frontier.matrix$Strategy.ind[nrow(frontier.matrix)]
     } else{
-      frontier.matrix$ICER[(NCS+1):nrow(frontier.matrix)] <-
+      frontier.matrix$ICER_front[(NCS+1):nrow(frontier.matrix)] <-
         diff(frontier.matrix$Costs[NCS:nrow(frontier.matrix)]) / diff(frontier.matrix$QALYs[NCS:nrow(frontier.matrix)])
-      icer <- as.numeric(frontier.matrix$ICER[(NCS+1):nrow(frontier.matrix)])  #ICER for non cost-saving strategies
+      icer <- as.numeric(frontier.matrix$ICER_front[(NCS+1):nrow(frontier.matrix)])  #ICER for non cost-saving strategies
       if (all(icer >= CEthreshold)){
         ocis       <- frontier.matrix$Strategy.ind[NCS]
       } else{
@@ -94,7 +94,7 @@ Frontier_Combinations <- function(totals){
   
   frontier.df <- as.data.frame(frontier.matrix)
   rm(indexStrat, highestqaly, i, ij, indiciesOfMax, lowestcost, maxWTP, 
-     numComb, ocis, ocis.ind, costsCol, qalyCol, romd, WTPtestPoints,
+     numComb, ocis, costsCol, qalyCol, romd, WTPtestPoints,
      frontier.matrix, CEmat)
   
   return(frontier.df)
