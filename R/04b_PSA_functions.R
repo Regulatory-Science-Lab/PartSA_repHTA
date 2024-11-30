@@ -494,7 +494,6 @@ PSA_frontier <- function(v_tumour_groups, outcomes_PSA, save_name){
       for (tumour in comb_sub){
         v_cost <- v_cost + outcomes_PSA$stratified_outcomes[[tumour]]$Inc_Cost
         v_qaly <- v_qaly + outcomes_PSA$stratified_outcomes[[tumour]]$Inc_QALYs
-        v_icer <- v_icer + outcomes_PSA$stratified_outcomes[[tumour]]$ICER
       }
       v_icer <- v_cost / v_qaly
 
