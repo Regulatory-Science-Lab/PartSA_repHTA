@@ -52,9 +52,11 @@ sum_cols <- c("Inc_Cost","Inc_QALYs","NMB_50000", "NMB_100000")
 # get summary statistics for all included columns
 df_pooled_summary <- sapply(l_outcomes_PSA$weighted_outcomes[,sum_cols], Summary_Outcomes)
 
-summary_icer <- Summary_Outcomes(l_outcomes_PSA$weighted_outcomes$ICER[l_outcomes_PSA$weighted_outcomes$Inc_QALYs > 0])
+summary_icer <- Summary_Outcomes(l_outcomes_PSA$weighted_outcomes$ICER[l_outcomes_PSA$weighted_outcomes$Inc_QALYs > 0 |
+                                                                         (l_outcomes_PSA$weighted_outcomes$Inc_QALYs < 0 & l_outcomes_PSA$weighted_outcomes$Inc_Cost <= 0) ])
 
 df_pooled_summary <- cbind(df_pooled_summary, t(summary_icer))
+colnames(df_pooled_summary) <- c(colnames(df_pooled_summary)[1:4], "ICER")
 
 # calculation proportion of dominated runs
 prop_dominated <- Prop_Dom(l_outcomes_PSA$weighted_outcomes)
@@ -82,9 +84,11 @@ for (tumour in v_tumour){
   # get summary statistics for all included columns
   df_summary <- sapply(tumour_results[,sum_cols], Summary_Outcomes)
   
-  summary_icer <- Summary_Outcomes(tumour_results$ICER[tumour_results$Inc_QALYs > 0])
+  summary_icer <- Summary_Outcomes(tumour_results$ICER[tumour_results$Inc_QALYs > 0 | 
+                                                         (tumour_results$Inc_QALYs < 0 & tumour_results$Inc_Cost <= 0)])
   
   df_summary <- cbind(df_summary, t(summary_icer))
+  colnames(df_summary) <- c(colnames(df_summary)[1:4], "ICER")
   
   # calculation proportion of dominated runs
   prop_dom_ts <- Prop_Dom(tumour_results)
