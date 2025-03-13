@@ -155,8 +155,8 @@ Parameter_Setup <- function(df_data_treat, l_parameter_space, ii){
     # treatment
     if (switch_observed == 0){
       # full extrapolation
-      l_curve_os_treat   <- Exponential_Curve(treat_vec$OS , v_times)
-      l_curve_pfs_treat  <- Exponential_Curve(treat_vec$PFS, v_times)
+      l_curve_os_treat   <- Exponential_Curve(treat_vec$OS , v_times, treat_vec$at_risk_os)
+      l_curve_pfs_treat  <- Exponential_Curve(treat_vec$PFS, v_times, treat_vec$at_risk_pfs)
     } else if (switch_observed == 1){
       # restricted extrapolation - switch to SoC exponential rates after observed period
       l_curve_os_treat  <- Exponential_Curve_Restricted(treat_vec$OS, treat_vec$at_risk_os, 

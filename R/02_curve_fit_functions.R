@@ -26,8 +26,8 @@ Generate_Survival_Curves <- function(df_data_SoC, df_data_treat, v_times, t_max_
   #entrec
   if (switch_observed == 0){
     # full extrapolation
-    l_curve_os_treat  <- Exponential_Curve(df_data_treat$OS , v_times)
-    l_curve_pfs_treat <- Exponential_Curve(df_data_treat$PFS, v_times)
+    l_curve_os_treat  <- Exponential_Curve(df_data_treat$OS , v_times, df_data_treat$at_risk_os)
+    l_curve_pfs_treat <- Exponential_Curve(df_data_treat$PFS, v_times, df_data_treat$at_risk_pfs)
   } else if (switch_observed == 1){
     # restricted extrapolation - switch to SoC exponential rates after observed period
     l_curve_os_treat  <- Exponential_Curve_Restricted(df_data_treat$OS, df_data_treat$at_risk_os, 
@@ -46,7 +46,7 @@ Generate_Survival_Curves <- function(df_data_SoC, df_data_treat, v_times, t_max_
 
 
 
-Exponential_Curve <- function(med_surv, times){
+Exponential_Curve <- function(med_surv, times, at_risk_prop = 0.5){
   # construct curve from median survival data using an exponential extrapolation
   # INPUTS
   # med_surv: median survival value
@@ -56,7 +56,7 @@ Exponential_Curve <- function(med_surv, times){
   
   # set data points for extrapolation (median survival at 50%)
   x <- c(0, med_surv)
-  y <- c(1, 0.5)
+  y <- c(1, at_risk_prop)
   
   # create dataframe of points
   df <- data.frame(x, y)
